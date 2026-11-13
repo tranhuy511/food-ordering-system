@@ -36,7 +36,13 @@ export class PaymentOrder {
     nullable: true,
   })
   activePaymentId: string | null;
-
+  @Column({
+    type: 'int',
+    unsigned: true,
+    default: 0,
+  })
+  attemptNumber: number;
+  
   @Column({
     type: 'varchar',
     length: 30,
