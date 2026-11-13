@@ -11,7 +11,9 @@ describe('RestaurantServiceController', () => {
       providers: [RestaurantServiceService],
     }).compile();
 
-    restaurantServiceController = app.get<RestaurantServiceController>(RestaurantServiceController);
+    restaurantServiceController = app.get<RestaurantServiceController>(
+      RestaurantServiceController,
+    );
   });
 
   describe('root', () => {

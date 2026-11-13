@@ -1,4 +1,3 @@
-
 import {
   Controller,
   Get,
@@ -22,9 +21,7 @@ import { Roles } from '../auth/decorators/roles.decorator/roles.decorator';
 
 @Controller('restaurants')
 export class RestaurantsController {
-  constructor(
-    private readonly restaurantsService: RestaurantsService,
-  ) {}
+  constructor(private readonly restaurantsService: RestaurantsService) {}
 
   // Lấy danh sách nhà hàng - công khai
   @Get()
@@ -52,10 +49,7 @@ export class RestaurantsController {
     @Param('id') id: string,
     @Body() updateRestaurantDto: UpdateRestaurantDto,
   ) {
-    return this.restaurantsService.update(
-      id,
-      updateRestaurantDto,
-    );
+    return this.restaurantsService.update(id, updateRestaurantDto);
   }
 
   // Xóa nhà hàng - chỉ Admin
@@ -74,9 +68,6 @@ export class RestaurantsController {
     @Param('id') id: string,
     @Body() updateStatusDto: UpdateRestaurantStatusDto,
   ) {
-    return this.restaurantsService.updateStatus(
-      id,
-      updateStatusDto.status,
-    );
+    return this.restaurantsService.updateStatus(id, updateStatusDto.status);
   }
 }

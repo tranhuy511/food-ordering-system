@@ -1,4 +1,3 @@
-
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClientsModule, Transport } from '@nestjs/microservices';
@@ -14,10 +13,7 @@ import { OrdersEventsController } from './orders.events.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      Order,
-      OrderItem,
-    ]),
+    TypeOrmModule.forFeature([Order, OrderItem]),
 
     ConfigModule,
 
@@ -27,8 +23,7 @@ import { OrdersEventsController } from './orders.events.controller';
         imports: [ConfigModule],
         inject: [ConfigService],
         useFactory: (configService: ConfigService) => {
-          const rabbitmqUrl =
-            configService.get<string>('RABBITMQ_URL');
+          const rabbitmqUrl = configService.get<string>('RABBITMQ_URL');
 
           if (!rabbitmqUrl) {
             throw new Error('Missing RABBITMQ_URL');
@@ -50,10 +45,7 @@ import { OrdersEventsController } from './orders.events.controller';
 
     AuthModule,
   ],
-  controllers: [
-    OrdersController,
-    OrdersEventsController,
-  ],
+  controllers: [OrdersController, OrdersEventsController],
   providers: [OrdersService],
 })
 export class OrdersModule {}

@@ -1,4 +1,3 @@
-
 import 'dotenv/config';
 import { DataSource } from 'typeorm';
 
@@ -15,9 +14,7 @@ export default new DataSource({
 
   entities: [Order, OrderItem],
 
-  migrations: [
-    'apps/order-service/src/database/migrations/*.ts',
-  ],
+  migrations: ['apps/order-service/src/database/migrations/*.ts'],
 
   synchronize: false,
 });

@@ -1,16 +1,13 @@
-
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import {
-  ClientsModule,
-  Transport,
-} from '@nestjs/microservices';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 import { Payment } from './payments/entities/payment.entity';
 import { PaymentServiceController } from './payment-service.controller';
 import { PaymentServiceService } from './payment-service.service';
 import { AuthModule } from './auth/auth.module';
+import { PaymentOrder } from './payments/entities/payment-order.entity';
 
 @Module({
   imports: [
@@ -35,7 +32,7 @@ import { AuthModule } from './auth/auth.module';
       }),
     }),
 
-    TypeOrmModule.forFeature([Payment]),
+    TypeOrmModule.forFeature([Payment, PaymentOrder]),
 
     ClientsModule.registerAsync([
       {
@@ -43,8 +40,7 @@ import { AuthModule } from './auth/auth.module';
         imports: [ConfigModule],
         inject: [ConfigService],
         useFactory: (config: ConfigService) => {
-          const rabbitmqUrl =
-            config.get<string>('RABBITMQ_URL');
+          const rabbitmqUrl = config.get<string>('RABBITMQ_URL');
 
           if (!rabbitmqUrl) {
             throw new Error('Missing RABBITMQ_URL');

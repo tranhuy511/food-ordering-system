@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
@@ -16,14 +13,10 @@ export class AuthService {
   ) {}
 
   async login(loginDto: LoginDto) {
-    const user = await this.usersService.findByEmail(
-      loginDto.email,
-    );
+    const user = await this.usersService.findByEmail(loginDto.email);
 
     if (!user || !user.password) {
-      throw new UnauthorizedException(
-        'Email hoặc mật khẩu không chính xác',
-      );
+      throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
     }
 
     const isPasswordValid = await bcrypt.compare(
@@ -32,9 +25,7 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException(
-        'Email hoặc mật khẩu không chính xác',
-      );
+      throw new UnauthorizedException('Email hoặc mật khẩu không chính xác');
     }
 
     const payload = {

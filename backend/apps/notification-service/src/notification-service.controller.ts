@@ -1,4 +1,3 @@
-
 import {
   Controller,
   Logger,
@@ -9,12 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import {
-  EventPattern,
-  Payload,
-  Ctx,
-  RmqContext,
-} from '@nestjs/microservices';
+import { EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
 
 import { Request } from 'express';
 
@@ -35,9 +29,7 @@ interface AuthenticatedRequest extends Request {
 
 @Controller('notifications')
 export class NotificationServiceController {
-  private readonly logger = new Logger(
-    NotificationServiceController.name,
-  );
+  private readonly logger = new Logger(NotificationServiceController.name);
 
   constructor(
     private readonly notificationService: NotificationServiceService,
@@ -46,12 +38,8 @@ export class NotificationServiceController {
   // API: Lấy danh sách thông báo của người dùng
   @Get()
   @UseGuards(JwtAuthGuard)
-  async getNotifications(
-    @Req() request: AuthenticatedRequest,
-  ) {
-    return this.notificationService.findAllByCustomer(
-      request.user.id,
-    );
+  async getNotifications(@Req() request: AuthenticatedRequest) {
+    return this.notificationService.findAllByCustomer(request.user.id);
   }
 
   // API: Đánh dấu một thông báo đã đọc
@@ -61,10 +49,7 @@ export class NotificationServiceController {
     @Param('id') id: string,
     @Req() request: AuthenticatedRequest,
   ) {
-    return this.notificationService.markAsRead(
-      id,
-      request.user.id,
-    );
+    return this.notificationService.markAsRead(id, request.user.id);
   }
 
   // RabbitMQ: Nhận sự kiện tạo đơn hàng
@@ -79,17 +64,13 @@ export class NotificationServiceController {
     try {
       await this.notificationService.saveOrderCreated(event);
 
-      this.logger.log(
-        `Đã xử lý event order.created: ${event.orderId}`,
-      );
+      this.logger.log(`Đã xử lý event order.created: ${event.orderId}`);
 
       channel.ack(message);
     } catch (error) {
       this.logger.error(
         `Không thể xử lý order.created: ${event?.orderId}`,
-        error instanceof Error
-          ? error.stack
-          : String(error),
+        error instanceof Error ? error.stack : String(error),
       );
 
       channel.nack(message, false, true);

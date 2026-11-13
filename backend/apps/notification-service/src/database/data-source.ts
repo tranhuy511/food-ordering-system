@@ -14,13 +14,9 @@ export default new DataSource({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
 
-  entities: [
-    Notification,
-  ],
+  entities: [Notification],
 
-  migrations: [
-    'apps/notification-service/src/database/migrations/*.ts',
-  ],
+  migrations: ['apps/notification-service/src/database/migrations/*.ts'],
 
   synchronize: false,
 });

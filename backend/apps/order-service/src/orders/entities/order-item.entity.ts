@@ -1,4 +1,3 @@
-
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -14,7 +13,6 @@ export class OrderItem {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  
   @ManyToOne(() => Order, (order) => order.items, {
     onDelete: 'CASCADE',
     nullable: false,

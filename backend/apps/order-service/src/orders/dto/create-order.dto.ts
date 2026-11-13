@@ -1,4 +1,3 @@
-
 import {
   IsUUID,
   IsString,
@@ -7,7 +6,6 @@ import {
   IsEnum,
   IsArray,
   ValidateNested,
-  MinLength,
   MaxLength,
   ArrayMinSize,
   ArrayMaxSize,

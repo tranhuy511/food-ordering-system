@@ -1,4 +1,3 @@
-
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -8,15 +7,10 @@ import {
 } from 'typeorm';
 
 @Entity('notifications')
-@Index(
-  'UQ_notifications_order_event',
-  ['orderId', 'eventType'],
-  { unique: true },
-)
-@Index(
-  'IDX_notifications_customer_created',
-  ['customerId', 'createdAt'],
-)
+@Index('UQ_notifications_order_event', ['orderId', 'eventType'], {
+  unique: true,
+})
+@Index('IDX_notifications_customer_created', ['customerId', 'createdAt'])
 export class Notification {
   @PrimaryGeneratedColumn('uuid')
   id: string;

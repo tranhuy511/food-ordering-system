@@ -1,4 +1,3 @@
-
 import 'dotenv/config';
 import { DataSource } from 'typeorm';
 
@@ -14,9 +13,7 @@ export default new DataSource({
 
   entities: [Payment],
 
-  migrations: [
-    'apps/payment-service/src/database/migrations/*.ts',
-  ],
+  migrations: ['apps/payment-service/src/database/migrations/*.ts'],
 
   synchronize: false,
 });

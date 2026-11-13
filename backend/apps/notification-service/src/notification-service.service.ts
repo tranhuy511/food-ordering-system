@@ -30,18 +30,14 @@ export interface OrderCreatedEvent {
 
 @Injectable()
 export class NotificationServiceService {
-  private readonly logger = new Logger(
-    NotificationServiceService.name,
-  );
+  private readonly logger = new Logger(NotificationServiceService.name);
 
   constructor(
     @InjectRepository(Notification)
     private readonly notificationRepository: Repository<Notification>,
   ) {}
 
-  async saveOrderCreated(
-    event: OrderCreatedEvent,
-  ): Promise<void> {
+  async saveOrderCreated(event: OrderCreatedEvent): Promise<void> {
     // Kiểm tra dữ liệu sự kiện.
     if (
       !event ||
@@ -86,16 +82,11 @@ export class NotificationServiceService {
       .execute();
 
     if (result.identifiers.length > 0) {
-      this.logger.log(
-        `Đã lưu thông báo cho đơn hàng ${event.orderId}`,
-      );
+      this.logger.log(`Đã lưu thông báo cho đơn hàng ${event.orderId}`);
     } else {
-      this.logger.warn(
-        `Thông báo cho đơn hàng ${event.orderId} đã tồn tại`,
-      );
+      this.logger.warn(`Thông báo cho đơn hàng ${event.orderId} đã tồn tại`);
     }
   }
-
 
   async findAllByCustomer(customerId: string) {
     return this.notificationRepository.find({
@@ -106,10 +97,7 @@ export class NotificationServiceService {
     });
   }
 
-  async markAsRead(
-    notificationId: string,
-    customerId: string,
-  ) {
+  async markAsRead(notificationId: string, customerId: string) {
     const result = await this.notificationRepository.update(
       {
         id: notificationId,
@@ -121,14 +109,11 @@ export class NotificationServiceService {
     );
 
     if (result.affected === 0) {
-      throw new NotFoundException(
-        'Không tìm thấy thông báo',
-      );
+      throw new NotFoundException('Không tìm thấy thông báo');
     }
 
     return {
       message: 'Đã đánh dấu thông báo là đã đọc',
     };
   }
-
 }

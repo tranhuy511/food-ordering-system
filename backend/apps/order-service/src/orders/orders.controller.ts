@@ -29,9 +29,7 @@ interface AuthenticatedRequest {
 
 @Controller('orders')
 export class OrdersController {
-  constructor(
-    private readonly ordersService: OrdersService,
-  ) {}
+  constructor(private readonly ordersService: OrdersService) {}
 
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -39,19 +37,13 @@ export class OrdersController {
     @Req() req: AuthenticatedRequest,
     @Body() createOrderDto: CreateOrderDto,
   ) {
-    return this.ordersService.create(
-      req.user.id,
-      createOrderDto,
-    );
+    return this.ordersService.create(req.user.id, createOrderDto);
   }
-
 
   @UseGuards(JwtAuthGuard)
   @Get()
   findAll(@Req() req: AuthenticatedRequest) {
-    return this.ordersService.findAll(
-      req.user.id,
-    );
+    return this.ordersService.findAll(req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -60,10 +52,7 @@ export class OrdersController {
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.ordersService.findOne(
-      id,
-      req.user.id,
-    );
+    return this.ordersService.findOne(id, req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -72,10 +61,7 @@ export class OrdersController {
     @Req() req: AuthenticatedRequest,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.ordersService.cancel(
-      id,
-      req.user.id,
-    );
+    return this.ordersService.cancel(id, req.user.id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -85,10 +71,6 @@ export class OrdersController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateOrderStatusDto,
   ) {
-    return this.ordersService.updateStatus(
-      id,
-      dto.status,
-    );
+    return this.ordersService.updateStatus(id, dto.status);
   }
-
 }

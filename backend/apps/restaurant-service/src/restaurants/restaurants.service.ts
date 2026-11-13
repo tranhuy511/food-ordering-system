@@ -2,10 +2,7 @@ import { CreateRestaurantDto } from './dto/create-restaurant.dto/create-restaura
 import { UpdateRestaurantDto } from './dto/update-restaurant.dto/update-restaurant.dto';
 import { RestaurantStatus } from './dto/update-restaurant-status.dto/update-restaurant-status.dto';
 
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Restaurant } from './entities/restaurant.entity';
@@ -33,9 +30,7 @@ export class RestaurantsService {
     return restaurant;
   }
 
-  async create(
-    createRestaurantDto: CreateRestaurantDto,
-  ): Promise<Restaurant> {
+  async create(createRestaurantDto: CreateRestaurantDto): Promise<Restaurant> {
     const restaurant = this.restaurantRepository.create({
       ...createRestaurantDto,
       status: 'pending',

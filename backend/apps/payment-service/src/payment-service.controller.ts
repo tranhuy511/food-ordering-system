@@ -1,11 +1,4 @@
-
-import {
-  Controller,
-  Post,
-  Body,
-  UseGuards,
-  Req,
-} from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
 
 import { PaymentServiceService } from './payment-service.service';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
@@ -24,9 +17,7 @@ interface AuthenticatedRequest {
 
 @Controller('payments')
 export class PaymentServiceController {
-  constructor(
-    private readonly paymentServiceService: PaymentServiceService,
-  ) {}
+  constructor(private readonly paymentServiceService: PaymentServiceService) {}
 
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -34,10 +25,7 @@ export class PaymentServiceController {
     @Req() req: AuthenticatedRequest,
     @Body() dto: CreatePaymentDto,
   ) {
-    const token = req.headers.authorization?.replace(
-      /^Bearer\s+/i,
-      '',
-    );
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
 
     if (!token) {
       throw new Error('Missing authentication token');

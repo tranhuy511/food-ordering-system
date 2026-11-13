@@ -1,9 +1,6 @@
 import { AuthModule } from './auth/auth.module';
 import { Module } from '@nestjs/common';
-import {
-  ConfigModule,
-  ConfigService,
-} from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { Notification } from './notifications/entities/notification.entity';
@@ -23,9 +20,7 @@ import { NotificationServiceService } from './notification-service.service';
       useFactory: (configService: ConfigService) => ({
         type: 'mysql' as const,
         host: configService.get<string>('DB_HOST'),
-        port: Number(
-          configService.get<string>('DB_PORT') || 3306,
-        ),
+        port: Number(configService.get<string>('DB_PORT') || 3306),
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_DATABASE'),
@@ -38,12 +33,8 @@ import { NotificationServiceService } from './notification-service.service';
     TypeOrmModule.forFeature([Notification]),
   ],
 
-  controllers: [
-    NotificationServiceController,
-  ],
+  controllers: [NotificationServiceController],
 
-  providers: [
-    NotificationServiceService,
-  ],
+  providers: [NotificationServiceService],
 })
 export class NotificationServiceModule {}

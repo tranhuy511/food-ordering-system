@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  ConflictException,
-} from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -26,10 +23,7 @@ export class UsersService {
       throw new ConflictException('Email đã được sử dụng');
     }
 
-    const hashedPassword = await bcrypt.hash(
-      createUserDto.password,
-      10,
-    );
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
     const user = this.userRepository.create({
       ...createUserDto,
@@ -38,9 +32,15 @@ export class UsersService {
 
     const savedUser = await this.userRepository.save(user);
 
-    const { password, ...result } = savedUser;
-
-    return result;
+    return {
+      id: savedUser.id,
+      fullName: savedUser.fullName,
+      email: savedUser.email,
+      phone: savedUser.phone,
+      role: savedUser.role,
+      createdAt: savedUser.createdAt,
+      updatedAt: savedUser.updatedAt,
+    };
   }
 
   async findAll() {

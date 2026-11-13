@@ -1,24 +1,17 @@
-
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import {
-  MicroserviceOptions,
-  Transport,
-} from '@nestjs/microservices';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 import { NotificationServiceModule } from './notification-service.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(
-    NotificationServiceModule,
-  );
+  const app = await NestFactory.create(NotificationServiceModule);
 
   const configService = app.get(ConfigService);
 
-  const rabbitmqUrl =
-    configService.get<string>('RABBITMQ_URL');
+  const rabbitmqUrl = configService.get<string>('RABBITMQ_URL');
 
   if (!rabbitmqUrl) {
     throw new Error('Missing RABBITMQ_URL');
@@ -48,9 +41,7 @@ async function bootstrap() {
 
   await app.listen(port);
 
-  Logger.log(
-    `Notification Service HTTP running at http://localhost:${port}`,
-  );
+  Logger.log(`Notification Service HTTP running at http://localhost:${port}`);
 
   Logger.log('RabbitMQ consumer connected');
 }

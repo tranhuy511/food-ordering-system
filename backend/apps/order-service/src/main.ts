@@ -1,12 +1,8 @@
-
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import {
-  MicroserviceOptions,
-  Transport,
-} from '@nestjs/microservices';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 import { OrderServiceModule } from './order-service.module';
 
@@ -15,8 +11,7 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
 
-  const rabbitmqUrl =
-    configService.get<string>('RABBITMQ_URL');
+  const rabbitmqUrl = configService.get<string>('RABBITMQ_URL');
 
   if (!rabbitmqUrl) {
     throw new Error('Missing RABBITMQ_URL');
@@ -51,15 +46,11 @@ async function bootstrap() {
   Logger.log('Listening on queue: food_payment_events');
 
   // Start HTTP server
-  const port = Number(
-    configService.get<string>('PORT') || 3002,
-  );
+  const port = Number(configService.get<string>('PORT') || 3002);
 
   await app.listen(port);
 
-  Logger.log(
-    `Order Service is running on port ${port}`,
-  );
+  Logger.log(`Order Service is running on port ${port}`);
 }
 
 bootstrap();

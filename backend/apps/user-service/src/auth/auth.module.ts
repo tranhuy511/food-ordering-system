@@ -28,12 +28,7 @@ import { UsersModule } from '../users/users.module';
     }),
   ],
 
-  providers: [
-    AuthService,
-    JwtStrategy,
-    JwtAuthGuard,
-    RolesGuard,
-  ],
+  providers: [AuthService, JwtStrategy, JwtAuthGuard, RolesGuard],
 
   controllers: [AuthController],
 })
