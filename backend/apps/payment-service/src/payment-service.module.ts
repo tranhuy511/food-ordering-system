@@ -2,6 +2,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import {
+  ClientsModule,
+  Transport,
+} from '@nestjs/microservices';
 
 import { Payment } from './payments/entities/payment.entity';
 import { PaymentServiceController } from './payment-service.controller';
@@ -32,8 +36,37 @@ import { AuthModule } from './auth/auth.module';
     }),
 
     TypeOrmModule.forFeature([Payment]),
+
+    ClientsModule.registerAsync([
+      {
+        name: 'PAYMENT_EVENTS',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (config: ConfigService) => {
+          const rabbitmqUrl =
+            config.get<string>('RABBITMQ_URL');
+
+          if (!rabbitmqUrl) {
+            throw new Error('Missing RABBITMQ_URL');
+          }
+
+          return {
+            transport: Transport.RMQ,
+            options: {
+              urls: [rabbitmqUrl],
+              queue: 'food_payment_events',
+              queueOptions: {
+                durable: true,
+              },
+            },
+          };
+        },
+      },
+    ]),
+
     AuthModule,
   ],
+
   controllers: [PaymentServiceController],
   providers: [PaymentServiceService],
 })
