@@ -1,9 +1,6 @@
-
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddPaymentAttemptNumber1794800000000
-  implements MigrationInterface
-{
+export class AddPaymentAttemptNumber1794800000000 implements MigrationInterface {
   name = 'AddPaymentAttemptNumber1794800000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -40,7 +37,7 @@ export class AddPaymentAttemptNumber1794800000000
       SET attemptNumber = (
         SELECT COUNT(*)
         FROM payments p
-        WHERE p.orderId = po.orderId
+        WHERE BINARY p.orderId = BINARY po.orderId
       )
     `);
   }
