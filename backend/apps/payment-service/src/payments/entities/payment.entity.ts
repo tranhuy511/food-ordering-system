@@ -59,7 +59,7 @@ export class Payment {
     default: 1,
   })
   attemptNumber: number;
-  
+
   @Column({
     type: 'varchar',
     length: 100,

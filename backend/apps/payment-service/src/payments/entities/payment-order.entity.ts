@@ -42,7 +42,7 @@ export class PaymentOrder {
     default: 0,
   })
   attemptNumber: number;
-  
+
   @Column({
     type: 'varchar',
     length: 30,

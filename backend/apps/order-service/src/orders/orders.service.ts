@@ -318,15 +318,12 @@ export class OrdersService {
     });
   }
 
-  
   // ==========================================
   // 5. HANDLE PAYMENT COMPLETED
   // RabbitMQ: payment.completed
   // ==========================================
 
-  async handlePaymentCompleted(
-    event: PaymentEventPayload,
-  ): Promise<void> {
+  async handlePaymentCompleted(event: PaymentEventPayload): Promise<void> {
     await this.applyPaymentEvent(event, PaymentStatus.PAID);
   }
 
@@ -335,9 +332,7 @@ export class OrdersService {
   // RabbitMQ: payment.failed
   // ==========================================
 
-  async handlePaymentFailed(
-    event: PaymentEventPayload,
-  ): Promise<void> {
+  async handlePaymentFailed(event: PaymentEventPayload): Promise<void> {
     await this.applyPaymentEvent(event, PaymentStatus.FAILED);
   }
 
@@ -363,9 +358,7 @@ export class OrdersService {
       !Number.isSafeInteger(event.attemptNumber) ||
       event.attemptNumber <= 0
     ) {
-      this.logger.error(
-        `Invalid ${eventName} payload: ${event.orderId}`,
-      );
+      this.logger.error(`Invalid ${eventName} payload: ${event.orderId}`);
       return;
     }
 
@@ -391,17 +384,13 @@ export class OrdersService {
 
       // Kiểm tra khách hàng sở hữu đơn hàng.
       if (order.customerId !== event.customerId) {
-        this.logger.error(
-          `Payment customer mismatch: ${event.orderId}`,
-        );
+        this.logger.error(`Payment customer mismatch: ${event.orderId}`);
         return;
       }
 
       // Chỉ xử lý đơn hàng thanh toán online.
       if (order.paymentMethod !== PaymentMethod.ONLINE) {
-        this.logger.error(
-          `Order is not an online payment: ${event.orderId}`,
-        );
+        this.logger.error(`Order is not an online payment: ${event.orderId}`);
         return;
       }
 
@@ -418,9 +407,7 @@ export class OrdersService {
         order.paymentStatus === PaymentStatus.PAID ||
         order.paymentStatus === PaymentStatus.REFUNDED
       ) {
-        this.logger.warn(
-          `Payment already processed: ${event.orderId}`,
-        );
+        this.logger.warn(`Payment already processed: ${event.orderId}`);
         return;
       }
 
@@ -428,20 +415,16 @@ export class OrdersService {
       if (event.attemptNumber <= order.lastPaymentAttempt) {
         this.logger.warn(
           `Ignoring outdated or duplicate payment event: ` +
-          `${event.orderId}, attempt ${event.attemptNumber}, ` +
-          `latest ${order.lastPaymentAttempt}`,
+            `${event.orderId}, attempt ${event.attemptNumber}, ` +
+            `latest ${order.lastPaymentAttempt}`,
         );
         return;
       }
 
       // Kiểm tra số tiền thanh toán.
-      const orderAmountCents = Math.round(
-        Number(order.totalAmount) * 100,
-      );
+      const orderAmountCents = Math.round(Number(order.totalAmount) * 100);
 
-      const eventAmountCents = Math.round(
-        Number(event.amount) * 100,
-      );
+      const eventAmountCents = Math.round(Number(event.amount) * 100);
 
       if (
         !Number.isSafeInteger(orderAmountCents) ||
@@ -450,9 +433,7 @@ export class OrdersService {
         eventAmountCents <= 0 ||
         orderAmountCents !== eventAmountCents
       ) {
-        this.logger.error(
-          `Payment amount mismatch: ${event.orderId}`,
-        );
+        this.logger.error(`Payment amount mismatch: ${event.orderId}`);
         return;
       }
 
@@ -466,7 +447,7 @@ export class OrdersService {
 
       this.logger.log(
         `${eventName} processed for order ${event.orderId}, ` +
-        `attempt ${event.attemptNumber}, status ${targetStatus}`,
+          `attempt ${event.attemptNumber}, status ${targetStatus}`,
       );
     });
   }

@@ -1,12 +1,6 @@
-
 import { Controller, Logger } from '@nestjs/common';
 
-import {
-  EventPattern,
-  Payload,
-  Ctx,
-  RmqContext,
-} from '@nestjs/microservices';
+import { EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
 
 import { OrdersService } from './orders.service';
 
@@ -37,7 +31,7 @@ export class OrdersEventsController {
     try {
       this.logger.log(
         `Received payment.completed: ${event.orderId}, ` +
-        `attempt ${event.attemptNumber}`,
+          `attempt ${event.attemptNumber}`,
       );
 
       await this.ordersService.handlePaymentCompleted(event);
@@ -46,7 +40,7 @@ export class OrdersEventsController {
 
       this.logger.log(
         `ACK payment.completed: ${event.orderId}, ` +
-        `attempt ${event.attemptNumber}`,
+          `attempt ${event.attemptNumber}`,
       );
     } catch (error) {
       this.logger.error(
@@ -69,7 +63,7 @@ export class OrdersEventsController {
     try {
       this.logger.warn(
         `Received payment.failed: ${event.orderId}, ` +
-        `attempt ${event.attemptNumber}`,
+          `attempt ${event.attemptNumber}`,
       );
 
       await this.ordersService.handlePaymentFailed(event);
@@ -78,7 +72,7 @@ export class OrdersEventsController {
 
       this.logger.log(
         `ACK payment.failed: ${event.orderId}, ` +
-        `attempt ${event.attemptNumber}`,
+          `attempt ${event.attemptNumber}`,
       );
     } catch (error) {
       this.logger.error(
