@@ -79,7 +79,7 @@ export class PaymentServiceService {
       totalAmount: string;
     };
 
-    // 2. Kiểm tra quyền sở hữu.
+    // 2. Kiểm tra quyền sở hữu đơn hàng.
     if (order.customerId !== customerId) {
       throw new UnauthorizedException('Bạn không sở hữu đơn hàng này');
     }
@@ -93,8 +93,11 @@ export class PaymentServiceService {
       throw new BadRequestException('Không thể thanh toán đơn hàng đã hủy');
     }
 
-    if (order.paymentStatus !== 'pending') {
-      throw new ConflictException('Đơn hàng không ở trạng thái chờ thanh toán');
+    // Cho phép thanh toán mới nếu lần trước thất bại.
+    if (order.paymentStatus !== 'pending' && order.paymentStatus !== 'failed') {
+      throw new ConflictException(
+        'Đơn hàng không ở trạng thái chờ thanh toán hoặc có thể thử lại',
+      );
     }
 
     // 4. Kiểm tra số tiền.
@@ -113,32 +116,33 @@ export class PaymentServiceService {
 
     const transactionId = `MOCK-${Date.now()}`;
 
-    // 6. Tạo payment và khóa payment_order trong cùng transaction.
+    // 6. Tạo Payment và cập nhật PaymentOrder
+    // trong cùng một Database transaction.
     const savedPayment = await this.dataSource.transaction(async (manager) => {
-      // Tạo bản ghi quản lý nếu đơn hàng chưa có.
-      // UNIQUE(orderId) giúp tránh tạo hai bản ghi quản lý.
+      // Khởi tạo bản ghi quản lý nếu chưa tồn tại.
+      // UNIQUE(orderId) tránh tạo nhiều bản ghi cho cùng đơn hàng.
       await manager.query(
         `
-          INSERT INTO payment_orders (
-            id,
-            orderId,
-            customerId,
-            activePaymentId,
-            status,
-            createdAt,
-            updatedAt
-          )
-          VALUES (
-            UUID(),
-            ?,
-            ?,
-            NULL,
-            'pending',
-            NOW(6),
-            NOW(6)
-          )
-          ON DUPLICATE KEY UPDATE
-            orderId = VALUES(orderId)
+            INSERT INTO payment_orders (
+              id,
+              orderId,
+              customerId,
+              activePaymentId,
+              status,
+              createdAt,
+              updatedAt
+            )
+            VALUES (
+              UUID(),
+              ?,
+              ?,
+              NULL,
+              'pending',
+              NOW(6),
+              NOW(6)
+            )
+            ON DUPLICATE KEY UPDATE
+              orderId = VALUES(orderId)
           `,
         [orderId, customerId],
       );
@@ -147,10 +151,12 @@ export class PaymentServiceService {
 
       const paymentRepo = manager.getRepository(Payment);
 
-      // Khóa bản ghi để các request đồng thời phải chờ nhau.
+      // Khóa bản ghi để tuần tự hóa các yêu cầu thanh toán.
       const paymentOrder = await paymentOrderRepo.findOne({
         where: { orderId },
-        lock: { mode: 'pessimistic_write' },
+        lock: {
+          mode: 'pessimistic_write',
+        },
       });
 
       if (!paymentOrder) {
@@ -159,18 +165,17 @@ export class PaymentServiceService {
         );
       }
 
-      // Kiểm tra khách hàng sở hữu bản ghi quản lý.
+      // Kiểm tra quyền sở hữu bản ghi thanh toán.
       if (paymentOrder.customerId !== customerId) {
         throw new UnauthorizedException('Bạn không sở hữu đơn hàng này');
       }
 
-      // Đã thanh toán thành công thì không cho thanh toán lại.
+      // Không cho thanh toán lại nếu đã thành công.
       if (paymentOrder.status === PaymentStatus.SUCCESS) {
         throw new ConflictException('Đơn hàng đã được thanh toán thành công');
       }
 
-      // pending + activePaymentId có nghĩa là đã có giao dịch
-      // đang được quản lý, không cho tạo giao dịch mới.
+      // Không cho tạo giao dịch mới khi đang có giao dịch pending.
       if (
         paymentOrder.status === PaymentStatus.PENDING &&
         paymentOrder.activePaymentId !== null
@@ -180,6 +185,7 @@ export class PaymentServiceService {
         );
       }
 
+      // Không cho thanh toán lại đơn hàng đã hoàn tiền.
       if (paymentOrder.status === PaymentStatus.REFUNDED) {
         throw new ConflictException(
           'Đơn hàng đã được hoàn tiền, không thể thanh toán lại',
@@ -187,36 +193,51 @@ export class PaymentServiceService {
       }
 
       // FAILED được phép thử thanh toán lại.
+      // Tăng số lần thanh toán trong bản ghi PaymentOrder.
+      const nextAttemptNumber = paymentOrder.attemptNumber + 1;
+
+      if (!Number.isSafeInteger(nextAttemptNumber) || nextAttemptNumber <= 0) {
+        throw new InternalServerErrorException(
+          'Số lần thanh toán không hợp lệ',
+        );
+      }
+
+      // Tạo giao dịch thanh toán mới.
       const payment = paymentRepo.create({
         orderId,
         customerId,
         amount: amountString,
         paymentMethod: PaymentMethod.ONLINE,
         status: isSuccess ? PaymentStatus.SUCCESS : PaymentStatus.FAILED,
+        attemptNumber: nextAttemptNumber,
         transactionId: isSuccess ? transactionId : null,
         failureReason: isSuccess ? null : 'Mock payment failed',
       });
 
       const saved = await paymentRepo.save(payment);
 
-      // Cập nhật trạng thái quản lý của đơn hàng.
+      // Cập nhật trạng thái và số lần thanh toán hiện tại.
       paymentOrder.activePaymentId = saved.id;
       paymentOrder.status = saved.status;
+      paymentOrder.attemptNumber = nextAttemptNumber;
 
       await paymentOrderRepo.save(paymentOrder);
 
       return saved;
     });
 
-    // 7. Phát sự kiện RabbitMQ sau khi transaction đã commit.
+    // 7. Phát sự kiện RabbitMQ sau khi Database transaction commit.
     const eventName = isSuccess ? 'payment.completed' : 'payment.failed';
 
+    // Gửi attemptNumber để Order Service xác định
+    // sự kiện thuộc lần thanh toán nào.
     const eventPayload = isSuccess
       ? {
           paymentId: savedPayment.id,
           orderId,
           customerId,
           amount: amountString,
+          attemptNumber: savedPayment.attemptNumber,
           transactionId,
         }
       : {
@@ -224,6 +245,7 @@ export class PaymentServiceService {
           orderId,
           customerId,
           amount: amountString,
+          attemptNumber: savedPayment.attemptNumber,
           failureReason: savedPayment.failureReason,
         };
 
@@ -232,13 +254,14 @@ export class PaymentServiceService {
     } catch (error) {
       this.logger.error(`Cannot publish ${eventName}`, error);
 
-      // Không tạo giao dịch mới khi event chưa gửi được.
-      // Cần bổ sung Transactional Outbox để bảo đảm gửi lại.
+      // Giao dịch đã được lưu trong Database.
+      // Cần Transactional Outbox để bảo đảm gửi lại sự kiện.
       throw new InternalServerErrorException(
         'Đã lưu giao dịch nhưng chưa gửi được sự kiện thanh toán',
       );
     }
 
+    // 8. Trả kết quả cho client.
     return {
       message: isSuccess ? 'Thanh toán thành công' : 'Thanh toán thất bại',
       payment: savedPayment,

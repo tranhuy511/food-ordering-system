@@ -54,6 +54,13 @@ export class Payment {
   status: PaymentStatus;
 
   @Column({
+    type: 'int',
+    unsigned: true,
+    default: 1,
+  })
+  attemptNumber: number;
+
+  @Column({
     type: 'varchar',
     length: 100,
     nullable: true,

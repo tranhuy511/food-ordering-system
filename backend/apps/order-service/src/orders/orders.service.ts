@@ -20,6 +20,16 @@ import {
 import { OrderItem } from './entities/order-item.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 
+interface PaymentEventPayload {
+  paymentId: string;
+  orderId: string;
+  customerId: string;
+  amount: string;
+  attemptNumber: number;
+  transactionId?: string;
+  failureReason?: string;
+}
+
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name);
@@ -313,16 +323,49 @@ export class OrdersService {
   // RabbitMQ: payment.completed
   // ==========================================
 
-  async handlePaymentCompleted(event: {
-    paymentId: string;
-    orderId: string;
-    customerId: string;
-    amount: string;
-    transactionId?: string;
-  }): Promise<void> {
+  async handlePaymentCompleted(event: PaymentEventPayload): Promise<void> {
+    await this.applyPaymentEvent(event, PaymentStatus.PAID);
+  }
+
+  // ==========================================
+  // 6. HANDLE PAYMENT FAILED
+  // RabbitMQ: payment.failed
+  // ==========================================
+
+  async handlePaymentFailed(event: PaymentEventPayload): Promise<void> {
+    await this.applyPaymentEvent(event, PaymentStatus.FAILED);
+  }
+
+  // ==========================================
+  // 7. APPLY PAYMENT EVENT
+  // Kiểm tra attemptNumber và cập nhật trạng thái
+  // ==========================================
+
+  private async applyPaymentEvent(
+    event: PaymentEventPayload,
+    targetStatus: PaymentStatus.PAID | PaymentStatus.FAILED,
+  ): Promise<void> {
+    const eventName =
+      targetStatus === PaymentStatus.PAID
+        ? 'payment.completed'
+        : 'payment.failed';
+
+    // Kiểm tra dữ liệu sự kiện.
+    if (
+      typeof event.paymentId !== 'string' ||
+      !event.paymentId.trim() ||
+      typeof event.attemptNumber !== 'number' ||
+      !Number.isSafeInteger(event.attemptNumber) ||
+      event.attemptNumber <= 0
+    ) {
+      this.logger.error(`Invalid ${eventName} payload: ${event.orderId}`);
+      return;
+    }
+
     await this.dataSource.transaction(async (manager) => {
       const orderRepository = manager.getRepository(Order);
 
+      // Khóa đơn hàng để tránh xử lý đồng thời.
       const order = await orderRepository.findOne({
         where: {
           id: event.orderId,
@@ -339,19 +382,19 @@ export class OrdersService {
         return;
       }
 
-      // Kiểm tra chủ sở hữu đơn hàng.
+      // Kiểm tra khách hàng sở hữu đơn hàng.
       if (order.customerId !== event.customerId) {
         this.logger.error(`Payment customer mismatch: ${event.orderId}`);
         return;
       }
 
-      // Chỉ đơn hàng thanh toán online mới xử lý sự kiện này.
+      // Chỉ xử lý đơn hàng thanh toán online.
       if (order.paymentMethod !== PaymentMethod.ONLINE) {
         this.logger.error(`Order is not an online payment: ${event.orderId}`);
         return;
       }
 
-      // Không thanh toán cho đơn hàng đã hủy.
+      // Không xử lý đơn hàng đã hủy.
       if (order.status === OrderStatus.CANCELLED) {
         this.logger.warn(
           `Ignoring payment for cancelled order: ${event.orderId}`,
@@ -368,12 +411,24 @@ export class OrdersService {
         return;
       }
 
-      // Kiểm tra số tiền từ Payment Service.
+      // Bỏ qua sự kiện cũ hoặc sự kiện trùng lặp.
+      if (event.attemptNumber <= order.lastPaymentAttempt) {
+        this.logger.warn(
+          `Ignoring outdated or duplicate payment event: ` +
+            `${event.orderId}, attempt ${event.attemptNumber}, ` +
+            `latest ${order.lastPaymentAttempt}`,
+        );
+        return;
+      }
+
+      // Kiểm tra số tiền thanh toán.
       const orderAmountCents = Math.round(Number(order.totalAmount) * 100);
 
       const eventAmountCents = Math.round(Number(event.amount) * 100);
 
       if (
+        !Number.isSafeInteger(orderAmountCents) ||
+        orderAmountCents <= 0 ||
         !Number.isSafeInteger(eventAmountCents) ||
         eventAmountCents <= 0 ||
         orderAmountCents !== eventAmountCents
@@ -382,96 +437,18 @@ export class OrdersService {
         return;
       }
 
-      order.paymentStatus = PaymentStatus.PAID;
+      // Cập nhật lần thanh toán mới nhất.
+      order.lastPaymentAttempt = event.attemptNumber;
+
+      // Cập nhật trạng thái theo kết quả thanh toán.
+      order.paymentStatus = targetStatus;
 
       await orderRepository.save(order);
 
-      this.logger.log(`Payment completed for order: ${event.orderId}`);
-    });
-  }
-
-  // ==========================================
-  // 6. HANDLE PAYMENT FAILED
-  // RabbitMQ: payment.failed
-  // ==========================================
-
-  async handlePaymentFailed(event: {
-    paymentId: string;
-    orderId: string;
-    customerId: string;
-    amount: string;
-    failureReason?: string;
-  }): Promise<void> {
-    await this.dataSource.transaction(async (manager) => {
-      const orderRepository = manager.getRepository(Order);
-
-      const order = await orderRepository.findOne({
-        where: {
-          id: event.orderId,
-        },
-        lock: {
-          mode: 'pessimistic_write',
-        },
-      });
-
-      if (!order) {
-        this.logger.error(
-          `Payment event references missing order: ${event.orderId}`,
-        );
-        return;
-      }
-
-      if (order.customerId !== event.customerId) {
-        this.logger.error(`Payment customer mismatch: ${event.orderId}`);
-        return;
-      }
-
-      if (order.paymentMethod !== PaymentMethod.ONLINE) {
-        this.logger.error(`Order is not an online payment: ${event.orderId}`);
-        return;
-      }
-
-      // Không ghi đè trạng thái đã thanh toán hoặc hoàn tiền.
-      if (
-        order.paymentStatus === PaymentStatus.PAID ||
-        order.paymentStatus === PaymentStatus.REFUNDED
-      ) {
-        this.logger.warn(
-          `Ignoring failed event for processed order: ${event.orderId}`,
-        );
-        return;
-      }
-
-      if (order.paymentStatus === PaymentStatus.FAILED) {
-        this.logger.warn(`Payment failure already processed: ${event.orderId}`);
-        return;
-      }
-
-      if (order.status === OrderStatus.CANCELLED) {
-        this.logger.warn(
-          `Ignoring payment failure for cancelled order: ${event.orderId}`,
-        );
-        return;
-      }
-
-      const orderAmountCents = Math.round(Number(order.totalAmount) * 100);
-
-      const eventAmountCents = Math.round(Number(event.amount) * 100);
-
-      if (
-        !Number.isSafeInteger(eventAmountCents) ||
-        eventAmountCents <= 0 ||
-        orderAmountCents !== eventAmountCents
-      ) {
-        this.logger.error(`Payment amount mismatch: ${event.orderId}`);
-        return;
-      }
-
-      order.paymentStatus = PaymentStatus.FAILED;
-
-      await orderRepository.save(order);
-
-      this.logger.warn(`Payment failed for order: ${event.orderId}`);
+      this.logger.log(
+        `${eventName} processed for order ${event.orderId}, ` +
+          `attempt ${event.attemptNumber}, status ${targetStatus}`,
+      );
     });
   }
 }

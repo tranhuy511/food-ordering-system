@@ -57,6 +57,13 @@ export class Order {
   paymentStatus: PaymentStatus;
 
   @Column({
+    type: 'int',
+    unsigned: true,
+    default: 0,
+  })
+  lastPaymentAttempt: number;
+
+  @Column({
     type: 'varchar',
     length: 30,
     default: PaymentMethod.CASH,
