@@ -25,3 +25,39 @@ npm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build
+dist/
+**/dist/
+coverage/
+**/coverage/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test results containing tokens or sensitive data
+loadtest/results/*.json
+loadtest/summary-*.json
+
+# Secret keys
+*.pem
+*.key

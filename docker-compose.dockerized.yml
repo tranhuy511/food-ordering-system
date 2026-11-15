@@ -1,0 +1,260 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: food-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?Set MYSQL_DATABASE in .env}
+      MYSQL_USER: ${MYSQL_USER:?Set MYSQL_USER in .env}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - food-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: food-redis
+    restart: unless-stopped
+    command: ["sh", "-c", "redis-server --requirepass \"$$REDIS_PASSWORD\""]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - food-network
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: food-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?Set RABBITMQ_USER in .env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - food-network
+
+  user-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: user-service
+    container_name: food-user-service
+    restart: unless-stopped
+    environment:
+      port: "3000"
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_DATABASE: ${MYSQL_DATABASE}
+      JWT_SECRET: ${JWT_SECRET:?Add the same JWT_SECRET used by the existing backend to root .env}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - food-network
+
+  restaurant-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: restaurant-service
+    container_name: food-restaurant-service
+    restart: unless-stopped
+    environment:
+      RESTAURANT_PORT: "3001"
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_DATABASE: ${MYSQL_DATABASE}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - food-network
+
+  order-service-1:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: order-service
+    container_name: food-order-service-1
+    restart: unless-stopped
+    environment:
+      PORT: "3002"
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_DATABASE: ${MYSQL_DATABASE}
+      RABBITMQ_URL: ${RABBITMQ_URL_DOCKER:?Add URL-encoded RABBITMQ_URL_DOCKER to root .env}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - food-network
+
+  order-service-2:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: order-service
+    container_name: food-order-service-2
+    restart: unless-stopped
+    environment:
+      PORT: "3012"
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_DATABASE: ${MYSQL_DATABASE}
+      RABBITMQ_URL: ${RABBITMQ_URL_DOCKER:?Add URL-encoded RABBITMQ_URL_DOCKER to root .env}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - food-network
+
+  payment-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: payment-service
+    container_name: food-payment-service
+    restart: unless-stopped
+    environment:
+      PAYMENT_SERVICE_PORT: "3003"
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_DATABASE: ${MYSQL_DATABASE}
+      RABBITMQ_URL: ${RABBITMQ_URL_DOCKER}
+      ORDER_SERVICE_URL: http://nginx:80
+      JWT_SECRET: ${JWT_SECRET}
+      MOCK_PAYMENT_RESULT: ${MOCK_PAYMENT_RESULT:-success}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - food-network
+
+  notification-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: notification-service
+    container_name: food-notification-service
+    restart: unless-stopped
+    environment:
+      NOTIFICATION_SERVICE_PORT: "3004"
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_DATABASE: ${MYSQL_DATABASE}
+      RABBITMQ_URL: ${RABBITMQ_URL_DOCKER}
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - food-network
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: food-nginx
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    volumes:
+      - ./nginx/nginx.docker.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      user-service:
+        condition: service_started
+      restaurant-service:
+        condition: service_started
+      order-service-1:
+        condition: service_started
+      order-service-2:
+        condition: service_started
+      payment-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - food-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: food-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      nginx:
+        condition: service_healthy
+    networks:
+      - food-network
+
+networks:
+  food-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:
+  rabbitmq_data:

@@ -8,6 +8,8 @@ import { PaymentServiceController } from './payment-service.controller';
 import { PaymentServiceService } from './payment-service.service';
 import { AuthModule } from './auth/auth.module';
 import { PaymentOrder } from './payments/entities/payment-order.entity';
+import { PaymentOutboxEvent } from './outbox/payment-outbox-event.entity';
+import { PaymentOutboxPublisherService } from './outbox/payment-outbox-publisher.service';
 
 @Module({
   imports: [
@@ -32,7 +34,11 @@ import { PaymentOrder } from './payments/entities/payment-order.entity';
       }),
     }),
 
-    TypeOrmModule.forFeature([Payment, PaymentOrder]),
+    TypeOrmModule.forFeature([
+      Payment,
+      PaymentOrder,
+      PaymentOutboxEvent,
+    ]),
 
     ClientsModule.registerAsync([
       {
@@ -64,6 +70,9 @@ import { PaymentOrder } from './payments/entities/payment-order.entity';
   ],
 
   controllers: [PaymentServiceController],
-  providers: [PaymentServiceService],
+    providers: [
+    PaymentServiceService,
+    PaymentOutboxPublisherService,
+  ],
 })
 export class PaymentServiceModule {}

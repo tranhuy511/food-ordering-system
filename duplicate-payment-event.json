@@ -1,0 +1,1 @@
+{"pattern":"payment.completed","data":{"orderId":"e8f289f1-ba87-41e4-bec3-8da5cd17a7de","customerId":"f985a92d-e356-4e16-8ad7-6f2800138081","transactionId":"MOCK-1794663165382","amount":"200000.00","paymentId":"f3c32ec7-c2bc-4a26-8c30-6dc82572e1e1","attemptNumber":2}}

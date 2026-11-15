@@ -1,7 +1,10 @@
+
 import 'dotenv/config';
 import { DataSource } from 'typeorm';
 
 import { Payment } from '../payments/entities/payment.entity';
+import { PaymentOrder } from '../payments/entities/payment-order.entity';
+import { PaymentOutboxEvent } from '../outbox/payment-outbox-event.entity';
 
 export default new DataSource({
   type: 'mysql',
@@ -11,9 +14,15 @@ export default new DataSource({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
 
-  entities: [Payment],
+  entities: [
+    Payment,
+    PaymentOrder,
+    PaymentOutboxEvent,
+  ],
 
-  migrations: ['apps/payment-service/src/database/migrations/*.ts'],
+  migrations: [
+    'apps/payment-service/src/database/migrations/*.ts',
+  ],
 
   synchronize: false,
 });

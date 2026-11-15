@@ -1,0 +1,14 @@
+// Backend hiện chưa có Product/Menu API. Đây là thực đơn demo phía giao diện.
+// Mỗi món có UUID ổn định để đáp ứng CreateOrderItemDto của Order Service.
+export const MENU = [
+  { id: 'b20f8db9-9b30-4e51-a5b2-6f7c1a7a0001', name: 'Phở bò đặc biệt', category: 'Món Việt', price: 69000, description: 'Nước dùng ninh xương, bò tái mềm và hành thơm.', image: 'https://images.unsplash.com/photo-1582878826629-29b7ad1dbc8f?auto=format&fit=crop&w=900&q=85', tag: 'Bán chạy', rating: '4.9', time: '20–25 phút' },
+  { id: 'b20f8db9-9b30-4e51-a5b2-6f7c1a7a0002', name: 'Bún chả Hà Nội', category: 'Món Việt', price: 62000, description: 'Thịt nướng thơm, bún tươi và nước chấm chua ngọt.', image: 'https://images.unsplash.com/photo-1559847844-5315695dadae?auto=format&fit=crop&w=900&q=85', tag: 'Được yêu thích', rating: '4.8', time: '20–30 phút' },
+  { id: 'b20f8db9-9b30-4e51-a5b2-6f7c1a7a0003', name: 'Cơm gà sốt tiêu', category: 'Cơm & mì', price: 55000, description: 'Cơm dẻo, gà áp chảo và sốt tiêu đậm vị.', image: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=900&q=85', tag: 'No căng bụng', rating: '4.7', time: '15–20 phút' },
+  { id: 'b20f8db9-9b30-4e51-a5b2-6f7c1a7a0004', name: 'Mì Ý bò bằm', category: 'Cơm & mì', price: 79000, description: 'Sốt cà chua nấu chậm, phô mai parmesan.', image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=900&q=85', tag: 'Chef chọn', rating: '4.8', time: '20–25 phút' },
+  { id: 'b20f8db9-9b30-4e51-a5b2-6f7c1a7a0005', name: 'Burger bò phô mai', category: 'Ăn nhanh', price: 85000, description: 'Bò nướng mọng nước, cheddar và rau tươi.', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=85', tag: 'Mới', rating: '4.9', time: '15–20 phút' },
+  { id: 'b20f8db9-9b30-4e51-a5b2-6f7c1a7a0006', name: 'Pizza phô mai', category: 'Ăn nhanh', price: 129000, description: 'Đế nướng lò, mozzarella kéo sợi và lá basil.', image: 'https://images.unsplash.com/photo-1579751626657-72bc17010498?auto=format&fit=crop&w=900&q=85', tag: 'Chia sẻ', rating: '4.8', time: '25–35 phút' },
+  { id: 'b20f8db9-9b30-4e51-a5b2-6f7c1a7a0007', name: 'Trà đào cam sả', category: 'Đồ uống', price: 35000, description: 'Trà thanh mát, đào giòn và cam tươi.', image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=900&q=85', tag: 'Giải nhiệt', rating: '4.9', time: '5–10 phút' },
+  { id: 'b20f8db9-9b30-4e51-a5b2-6f7c1a7a0008', name: 'Cà phê sữa đá', category: 'Đồ uống', price: 29000, description: 'Cà phê rang xay đậm đà, sữa đặc béo nhẹ.', image: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=900&q=85', tag: 'Quen thuộc', rating: '4.9', time: '5–10 phút' },
+];
+
+export const CATEGORIES = ['Tất cả', 'Món Việt', 'Cơm & mì', 'Ăn nhanh', 'Đồ uống'];

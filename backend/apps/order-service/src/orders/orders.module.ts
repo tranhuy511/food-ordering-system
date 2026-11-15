@@ -10,10 +10,16 @@ import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 import { AuthModule } from '../auth/auth.module';
 import { OrdersEventsController } from './orders.events.controller';
+import { OutboxEvent } from '../outbox/outbox-event.entity';
+import { OutboxPublisherService } from '../outbox/outbox-publisher.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Order, OrderItem]),
+    TypeOrmModule.forFeature([
+      Order,
+      OrderItem,
+      OutboxEvent,
+    ]),
 
     ConfigModule,
 
@@ -46,6 +52,9 @@ import { OrdersEventsController } from './orders.events.controller';
     AuthModule,
   ],
   controllers: [OrdersController, OrdersEventsController],
-  providers: [OrdersService],
+  providers: [
+    OrdersService,
+    OutboxPublisherService,
+  ],
 })
 export class OrdersModule {}

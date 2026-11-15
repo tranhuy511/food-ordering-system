@@ -1,0 +1,57 @@
+========== backend/apps/restaurant-service/src/restaurant-service.module.ts ==========
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { RestaurantServiceController } from './restaurant-service.controller';
+import { RestaurantServiceService } from './restaurant-service.service';
+import { RestaurantsModule } from './restaurants/restaurants.module';
+import { AuthModule } from './auth/auth.module';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        type: 'mysql',
+        host: configService.get<string>('DB_HOST'),
+        port: configService.get<number>('DB_PORT'),
+        username: configService.get<string>('DB_USERNAME'),
+        password: configService.get<string>('DB_PASSWORD'),
+        database: configService.get<string>('DB_DATABASE'),
+        autoLoadEntities: true,
+        synchronize: false,
+      }),
+    }),
+    RestaurantsModule,
+    AuthModule,
+  ],
+  controllers: [RestaurantServiceController],
+  providers: [RestaurantServiceService],
+})
+export class RestaurantServiceModule {}
+
+
+========== DATABASE MIGRATIONS ==========
+
+========== D:\visual studio code\dự án\food-ordering-system\backend\apps\restaurant-service\src\database\migrations\1794313864288-CreateRestaurantsTable.ts ==========
+import { MigrationInterface, QueryRunner } from 'typeorm';
+
+export class CreateRestaurantsTable1794313864288 implements MigrationInterface {
+  name = 'CreateRestaurantsTable1794313864288';
+
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(
+      `CREATE TABLE \`restaurants\` (\`id\` varchar(36) NOT NULL, \`name\` varchar(150) NOT NULL, \`description\` text NULL, \`address\` varchar(255) NOT NULL, \`phone\` varchar(20) NOT NULL, \`email\` varchar(150) NULL, \`imageUrl\` varchar(500) NULL, \`ownerId\` varchar(36) NOT NULL, \`status\` varchar(30) NOT NULL DEFAULT 'pending', \`createdAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updatedAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`,
+    );
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`DROP TABLE \`restaurants\``);
+  }
+}
+

@@ -1,13 +1,12 @@
 import {
   Injectable,
-  Inject,
   Logger,
   BadRequestException,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 
-import { ClientProxy } from '@nestjs/microservices';
+import { OutboxEvent } from '../outbox/outbox-event.entity';
 import { DataSource } from 'typeorm';
 
 import {
@@ -36,9 +35,6 @@ export class OrdersService {
 
   constructor(
     private readonly dataSource: DataSource,
-
-    @Inject('ORDER_EVENTS')
-    private readonly orderEvents: ClientProxy,
   ) {}
 
   // ==========================================
@@ -118,38 +114,44 @@ export class OrdersService {
         );
       }
 
-      return result;
-    });
+      // Ghi sự kiện vào Outbox trong cùng transaction
+      // với đơn hàng và chi tiết đơn hàng.
+      const outboxRepository = manager.getRepository(OutboxEvent);
 
-    // Transaction đã commit thành công.
-    // Phát sự kiện order.created qua RabbitMQ.
-    this.orderEvents
-      .emit('order.created', {
+      const eventPayload = {
         eventVersion: 1,
-        orderId: createdOrder.id,
-        customerId: createdOrder.customerId,
-        restaurantId: createdOrder.restaurantId,
-        totalAmount: createdOrder.totalAmount,
-        paymentMethod: createdOrder.paymentMethod,
-        createdAt: createdOrder.createdAt,
+        orderId: result.id,
+        customerId: result.customerId,
+        restaurantId: result.restaurantId,
+        totalAmount: result.totalAmount,
+        paymentMethod: result.paymentMethod,
+        createdAt: result.createdAt,
 
-        items: createdOrder.items.map((item) => ({
+        items: result.items.map((item) => ({
           productId: item.productId,
           productName: item.productName,
           unitPrice: item.unitPrice,
           quantity: item.quantity,
           subtotal: item.subtotal,
         })),
-      })
-      .subscribe({
-        error: (error) => {
-          this.logger.error(
-            'Không thể gửi event order.created',
-            error instanceof Error ? error.stack : String(error),
-          );
-        },
+      };
+
+      const outboxEvent = outboxRepository.create({
+        eventType: 'order.created',
+        aggregateId: result.id,
+        payload: eventPayload,
+        status: 'pending',
+        retryCount: 0,
+        lockedAt: null,
+        lockedBy: null,
+        lastError: null,
+        publishedAt: null,
       });
 
+      await outboxRepository.save(outboxEvent);
+
+      return result;
+    });
     return createdOrder;
   }
 

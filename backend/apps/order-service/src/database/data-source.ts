@@ -3,6 +3,7 @@ import { DataSource } from 'typeorm';
 
 import { Order } from '../orders/entities/order.entity';
 import { OrderItem } from '../orders/entities/order-item.entity';
+import { OutboxEvent } from '../outbox/outbox-event.entity';
 
 export default new DataSource({
   type: 'mysql',
@@ -12,7 +13,7 @@ export default new DataSource({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
 
-  entities: [Order, OrderItem],
+  entities: [Order, OrderItem, OutboxEvent],
 
   migrations: ['apps/order-service/src/database/migrations/*.ts'],
 
